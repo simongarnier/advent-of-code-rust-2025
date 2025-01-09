@@ -39,20 +39,22 @@ fn locate_table(readme: &str) -> Result<TablePosition, Error> {
         ));
     }
 
-    let pos_start = matches
-        .first()
-        .map(|m| m.0)
-        .ok_or_else(|| Error::Parser("Could not find table start position.".into()))?;
+    let pos_start = matches.first().map(|m| m.0).ok_or_else(|| {
+        Error::Parser("Could not find table start position.".into())
+    })?;
 
-    let pos_end = matches
-        .last()
-        .map(|m| m.0 + m.1.len())
-        .ok_or_else(|| Error::Parser("Could not find table end position.".into()))?;
+    let pos_end = matches.last().map(|m| m.0 + m.1.len()).ok_or_else(|| {
+        Error::Parser("Could not find table end position.".into())
+    })?;
 
     Ok(TablePosition { pos_start, pos_end })
 }
 
-fn construct_table(prefix: &str, timings: Timings, total_millis: f64) -> String {
+fn construct_table(
+    prefix: &str,
+    timings: Timings,
+    total_millis: f64,
+) -> String {
     let header = format!("{prefix} Benchmarks");
 
     let mut lines: Vec<String> = vec![
@@ -81,7 +83,11 @@ fn construct_table(prefix: &str, timings: Timings, total_millis: f64) -> String 
     lines.join("\n")
 }
 
-fn update_content(s: &mut String, timings: Timings, total_millis: f64) -> Result<(), Error> {
+fn update_content(
+    s: &mut String,
+    timings: Timings,
+    total_millis: f64,
+) -> Result<(), Error> {
     let positions = locate_table(s)?;
     let table = construct_table("##", timings, total_millis);
     s.replace_range(positions.pos_start..positions.pos_end, &table);

@@ -86,7 +86,8 @@ impl TryFrom<String> for Timings {
     type Error = String;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        let json = JsonValue::from_str(&value).or(Err("not valid JSON file."))?;
+        let json =
+            JsonValue::from_str(&value).or(Err("not valid JSON file."))?;
 
         let json_data = json
             .get::<HashMap<String, JsonValue>>()

@@ -45,20 +45,24 @@ mod tests {
 
     #[test]
     fn test_part_one() {
-        let result = part_one(&advent_of_code::template::read_file("examples", DAY));
+        let result =
+            part_one(&advent_of_code::template::read_file("examples", DAY));
         assert_eq!(result, Some(11));
     }
 
     #[test]
     fn test_part_two() {
-        let result = part_two(&advent_of_code::template::read_file("examples", DAY));
+        let result =
+            part_two(&advent_of_code::template::read_file("examples", DAY));
         assert_eq!(result, Some(31));
     }
 
     #[test]
     fn test_basic_parser() {
         assert_eq!(
-            parse_input(advent_of_code::template::read_file("examples", DAY).as_str()),
+            parse_input(
+                advent_of_code::template::read_file("examples", DAY).as_str()
+            ),
             (vec![3, 4, 2, 1, 3, 3], vec![4, 3, 5, 3, 9, 3])
         )
     }

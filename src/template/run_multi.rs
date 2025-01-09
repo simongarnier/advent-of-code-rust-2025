@@ -7,7 +7,11 @@ use super::{
     timings::{Timing, Timings},
 };
 
-pub fn run_multi(days_to_run: &HashSet<Day>, is_release: bool, is_timed: bool) -> Option<Timings> {
+pub fn run_multi(
+    days_to_run: &HashSet<Day>,
+    is_release: bool,
+    is_timed: bool,
+) -> Option<Timings> {
     let mut timings: Vec<Timing> = Vec::with_capacity(days_to_run.len());
 
     let mut need_space = false;
@@ -24,7 +28,9 @@ pub fn run_multi(days_to_run: &HashSet<Day>, is_release: bool, is_timed: bool) -
             println!("{ANSI_BOLD}Day {day}{ANSI_RESET}");
             println!("------");
 
-            let output = child_commands::run_solution(day, is_timed, is_release).unwrap();
+            let output =
+                child_commands::run_solution(day, is_timed, is_release)
+                    .unwrap();
 
             if output.is_empty() {
                 println!("Not solved.");
@@ -77,7 +83,11 @@ pub mod child_commands {
     };
 
     /// Run the solution bin for a given day
-    pub fn run_solution(day: Day, is_timed: bool, is_release: bool) -> Result<Vec<String>, Error> {
+    pub fn run_solution(
+        day: Day,
+        is_timed: bool,
+        is_release: bool,
+    ) -> Result<Vec<String>, Error> {
         // skip command invocation for days that have not been scaffolded yet.
         if !Path::new(&get_path_for_bin(day)).exists() {
             return Ok(vec![]);
@@ -105,8 +115,10 @@ pub mod child_commands {
             .stderr(Stdio::piped())
             .spawn()?;
 
-        let stdout = BufReader::new(cmd.stdout.take().ok_or(super::Error::BrokenPipe)?);
-        let stderr = BufReader::new(cmd.stderr.take().ok_or(super::Error::BrokenPipe)?);
+        let stdout =
+            BufReader::new(cmd.stdout.take().ok_or(super::Error::BrokenPipe)?);
+        let stderr =
+            BufReader::new(cmd.stderr.take().ok_or(super::Error::BrokenPipe)?);
 
         let mut output = vec![];
 
@@ -181,8 +193,12 @@ pub mod child_commands {
 
         let parsed_timing = match str_timing {
             s if s.contains("ns") => s.split("ns").next()?.parse::<f64>().ok(),
-            s if s.contains("µs") => parse_to_float(s, "µs").map(|x| x * 1000_f64),
-            s if s.contains("ms") => parse_to_float(s, "ms").map(|x| x * 1_000_000_f64),
+            s if s.contains("µs") => {
+                parse_to_float(s, "µs").map(|x| x * 1000_f64)
+            }
+            s if s.contains("ms") => {
+                parse_to_float(s, "ms").map(|x| x * 1_000_000_f64)
+            }
             s => parse_to_float(s, "s").map(|x| x * 1_000_000_000_f64),
         }?;
 

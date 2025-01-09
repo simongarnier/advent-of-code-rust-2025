@@ -1,4 +1,7 @@
-use nom::{bytes::complete::tag, character::complete::i32, multi::separated_list1, IResult};
+use nom::{
+    bytes::complete::tag, character::complete::i32, multi::separated_list1,
+    IResult,
+};
 
 advent_of_code::solution!(2);
 
@@ -64,7 +67,8 @@ impl Report {
 }
 
 fn parse_report(input: &str) -> IResult<&str, Report> {
-    separated_list1(tag(" "), i32)(input).map(|(r, element)| (r, element.into()))
+    separated_list1(tag(" "), i32)(input)
+        .map(|(r, element)| (r, element.into()))
 }
 
 fn parse_reports(input: &str) -> IResult<&str, Vec<Report>> {
@@ -74,7 +78,9 @@ fn parse_reports(input: &str) -> IResult<&str, Vec<Report>> {
 pub fn part_one(input: &str) -> Option<u64> {
     Some(
         parse_reports(input)
-            .map(|(_, reports)| reports.iter().filter(|report| report.is_safe()).count())
+            .map(|(_, reports)| {
+                reports.iter().filter(|report| report.is_safe()).count()
+            })
             .expect("parsing failed") as u64,
     )
 }
@@ -85,7 +91,9 @@ pub fn part_two(input: &str) -> Option<u64> {
             .map(|(_, reports)| {
                 reports
                     .iter()
-                    .filter(|report| report.is_safe() || report.is_safe_dampened())
+                    .filter(|report| {
+                        report.is_safe() || report.is_safe_dampened()
+                    })
                     .count()
             })
             .expect("parsing failed") as u64,
@@ -99,7 +107,9 @@ mod tests {
     #[test]
     fn test_parse_reports() {
         assert_eq!(
-            parse_reports(advent_of_code::template::read_file("examples", DAY).as_str()),
+            parse_reports(
+                advent_of_code::template::read_file("examples", DAY).as_str()
+            ),
             Ok((
                 "",
                 vec![
@@ -128,13 +138,15 @@ mod tests {
 
     #[test]
     fn test_part_one() {
-        let result = part_one(&advent_of_code::template::read_file("examples", DAY));
+        let result =
+            part_one(&advent_of_code::template::read_file("examples", DAY));
         assert_eq!(result, Some(2));
     }
 
     #[test]
     fn test_part_two() {
-        let result = part_two(&advent_of_code::template::read_file("examples", DAY));
+        let result =
+            part_two(&advent_of_code::template::read_file("examples", DAY));
         assert_eq!(result, Some(4));
     }
 }

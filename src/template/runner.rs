@@ -9,7 +9,12 @@ use std::{cmp, env, process};
 use crate::template::ANSI_BOLD;
 use crate::template::{aoc_cli, Day, ANSI_ITALIC, ANSI_RESET};
 
-pub fn run_part<I: Copy, T: Display>(func: impl Fn(I) -> Option<T>, input: I, day: Day, part: u8) {
+pub fn run_part<I: Copy, T: Display>(
+    func: impl Fn(I) -> Option<T>,
+    input: I,
+    day: Day,
+    part: u8,
+) {
     let part_str = format!("Part {part}");
 
     let (result, duration, samples) =
@@ -50,14 +55,19 @@ fn run_timed<I: Copy, T>(
     (result, run.0, run.1)
 }
 
-fn bench<I: Copy, T>(func: impl Fn(I) -> T, input: I, base_time: &Duration) -> (Duration, u128) {
+fn bench<I: Copy, T>(
+    func: impl Fn(I) -> T,
+    input: I,
+    base_time: &Duration,
+) -> (Duration, u128) {
     let mut stdout = stdout();
 
     print!(" > {ANSI_ITALIC}benching{ANSI_RESET}");
     let _ = stdout.flush();
 
-    let bench_iterations =
-        (Duration::from_secs(1).as_nanos() / cmp::max(base_time.as_nanos(), 10)).clamp(10, 10000);
+    let bench_iterations = (Duration::from_secs(1).as_nanos()
+        / cmp::max(base_time.as_nanos(), 10))
+    .clamp(10, 10000);
 
     let mut timers: Vec<Duration> = vec![];
 
@@ -90,7 +100,11 @@ fn format_duration(duration: &Duration, samples: u128) -> String {
     }
 }
 
-fn print_result<T: Display>(result: &Option<T>, part: &str, duration_str: &str) {
+fn print_result<T: Display>(
+    result: &Option<T>,
+    part: &str,
+    duration_str: &str,
+) {
     let is_intermediate_result = duration_str.is_empty();
 
     match result {
@@ -105,7 +119,9 @@ fn print_result<T: Display>(result: &Option<T>, part: &str, duration_str: &str) 
                     println!("{result}");
                 }
             } else {
-                let str = format!("{part}: {ANSI_BOLD}{result}{ANSI_RESET}{duration_str}");
+                let str = format!(
+                    "{part}: {ANSI_BOLD}{result}{ANSI_RESET}{duration_str}"
+                );
                 if is_intermediate_result {
                     print!("{str}");
                 } else {
@@ -140,14 +156,18 @@ fn submit_result<T: Display>(
     }
 
     if args.len() < 3 {
-        eprintln!("Unexpected command-line input. Format: cargo solve 1 --submit 1");
+        eprintln!(
+            "Unexpected command-line input. Format: cargo solve 1 --submit 1"
+        );
         process::exit(1);
     }
 
     let part_index = args.iter().position(|x| x == "--submit").unwrap() + 1;
 
     let Ok(part_submit) = args[part_index].parse::<u8>() else {
-        eprintln!("Unexpected command-line input. Format: cargo solve 1 --submit 1");
+        eprintln!(
+            "Unexpected command-line input. Format: cargo solve 1 --submit 1"
+        );
         process::exit(1);
     };
 
