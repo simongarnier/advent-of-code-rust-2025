@@ -18,10 +18,11 @@ struct Mul {
 
 #[derive(Debug, PartialEq, Eq)]
 enum Instruction {
-    Mul { lhs: i32, rhs: i32 },
+    Mult { lhs: i32, rhs: i32 },
     Do,
     DoNot,
 }
+use Instruction::*;
 
 impl From<(i32, i32)> for Mul {
     fn from(value: (i32, i32)) -> Self {
@@ -34,7 +35,7 @@ impl From<(i32, i32)> for Mul {
 
 impl From<(i32, i32)> for Instruction {
     fn from(value: (i32, i32)) -> Self {
-        Instruction::Mul {
+        Mult {
             lhs: value.0,
             rhs: value.1,
         }
@@ -50,11 +51,11 @@ where
 }
 
 fn parse_do(input: &str) -> IResult<&str, Instruction> {
-    tag("do()")(input).map(|(rest, _)| (rest, Instruction::Do))
+    tag("do()")(input).map(|(rest, _)| (rest, Do))
 }
 
 fn parse_do_not(input: &str) -> IResult<&str, Instruction> {
-    tag("don't()")(input).map(|(rest, _)| (rest, Instruction::DoNot))
+    tag("don't()")(input).map(|(rest, _)| (rest, DoNot))
 }
 
 fn parse_instruction(input: &str) -> IResult<&str, Instruction> {
@@ -84,24 +85,21 @@ enum Stack {
     Open(i32),
     Closed(i32),
 }
+use Stack::*;
 
 impl Stack {
     fn apply(&self, inst: Instruction) -> Self {
         match (self, inst) {
-            (Stack::EmptyOpen, Instruction::Mul { lhs, rhs }) => {
-                Stack::Open(lhs * rhs)
-            }
-            (Stack::EmptyOpen, Instruction::DoNot) => Stack::EmptyClosed,
-            (Stack::EmptyOpen, _) => Stack::EmptyOpen,
-            (Stack::EmptyClosed, Instruction::Do) => Stack::EmptyOpen,
-            (Stack::EmptyClosed, _) => Stack::EmptyClosed,
-            (Stack::Open(acc), Instruction::DoNot) => Stack::Closed(*acc),
-            (Stack::Open(acc), Instruction::Mul { lhs, rhs }) => {
-                Stack::Open(*acc + (lhs * rhs))
-            }
-            (Stack::Open(acc), _) => Stack::Open(*acc),
-            (Stack::Closed(acc), Instruction::Do) => Stack::Open(*acc),
-            (Stack::Closed(acc), _) => Stack::Closed(*acc),
+            (EmptyOpen, Mult { lhs, rhs }) => Open(lhs * rhs),
+            (EmptyOpen, DoNot) => EmptyClosed,
+            (EmptyOpen, _) => EmptyOpen,
+            (EmptyClosed, Do) => EmptyOpen,
+            (EmptyClosed, _) => EmptyClosed,
+            (Open(acc), DoNot) => Closed(*acc),
+            (Open(acc), Mult { lhs, rhs }) => Open(*acc + (lhs * rhs)),
+            (Open(acc), _) => Open(*acc),
+            (Closed(acc), Do) => Open(*acc),
+            (Closed(acc), _) => Closed(*acc),
         }
     }
 }
@@ -109,8 +107,8 @@ impl Stack {
 impl From<Stack> for Option<u64> {
     fn from(value: Stack) -> Self {
         match value {
-            Stack::Open(acc) => Some(acc),
-            Stack::Closed(acc) => Some(acc),
+            Open(acc) => Some(acc),
+            Closed(acc) => Some(acc),
             _ => None,
         }
         .map(|acc| acc as u64)
@@ -120,7 +118,7 @@ impl From<Stack> for Option<u64> {
 impl Computable<Stack> for Vec<Instruction> {
     fn compute(self) -> Stack {
         self.into_iter()
-            .fold(Stack::EmptyOpen, |stack, inst| stack.apply(inst))
+            .fold(EmptyOpen, |stack, inst| stack.apply(inst))
     }
 }
 
@@ -201,10 +199,10 @@ mod tests {
             Ok((
                 ")\n",
                 vec![
-                    Instruction::Mul { lhs: 2, rhs: 4 },
-                    Instruction::Mul { lhs: 5, rhs: 5 },
-                    Instruction::Mul { lhs: 11, rhs: 8 },
-                    Instruction::Mul { lhs: 8, rhs: 5 }
+                    Mult { lhs: 2, rhs: 4 },
+                    Mult { lhs: 5, rhs: 5 },
+                    Mult { lhs: 11, rhs: 8 },
+                    Mult { lhs: 8, rhs: 5 }
                 ]
             ))
         );
@@ -215,12 +213,12 @@ mod tests {
             Ok((
                 ")",
                 vec![
-                    Instruction::Mul { lhs: 2, rhs: 4 },
-                    Instruction::DoNot,
-                    Instruction::Mul { lhs: 5, rhs: 5 },
-                    Instruction::Mul { lhs: 11, rhs: 8 },
-                    Instruction::Do,
-                    Instruction::Mul { lhs: 8, rhs: 5 }
+                    Mult { lhs: 2, rhs: 4 },
+                    DoNot,
+                    Mult { lhs: 5, rhs: 5 },
+                    Mult { lhs: 11, rhs: 8 },
+                    Do,
+                    Mult { lhs: 8, rhs: 5 }
                 ]
             ))
         )
@@ -233,7 +231,7 @@ mod tests {
                 "xmul(2,4)&mul[3,7]!^don't()_mul(5,5)+mul(32,64](mul(11,8)undo()?mul(8,5))"
             ).map(|(_, insts)| insts.compute()),
             Ok(
-                Stack::Open(48)
+                Open(48)
             )
         );
     }
