@@ -33,3 +33,4 @@ rayon = "1.10.0"
 grid = "0.15.0"
 strum = "0.26.3"
 strum_macros = "0.26.4"
+moka = { version = "0.12.10", features = ["sync"] }
