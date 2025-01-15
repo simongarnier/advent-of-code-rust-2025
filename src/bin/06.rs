@@ -1,5 +1,6 @@
 advent_of_code::solution!(6);
 
+use grid::*;
 use std::{collections::HashSet, fmt::Debug};
 
 use nom::{
@@ -12,7 +13,8 @@ use nom::{
 
 use rayon::prelude::*;
 
-struct Grid<T>(Vec<Vec<T>>);
+#[derive(Debug)]
+struct Map<T>(Grid<T>);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 struct Position {
@@ -25,7 +27,6 @@ enum Marker {
     Empty,
     Obstacle,
     Start,
-    Visited,
 }
 use Marker::*;
 
@@ -52,59 +53,20 @@ struct Guard {
     visited: HashSet<(Position, Direction)>,
 }
 
+impl From<(usize, usize)> for Position {
+    fn from((row, col): (usize, usize)) -> Self {
+        Position { x: col, y: row }
+    }
+}
+
 impl Debug for Marker {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Empty => f.write_str(".")?,
             Obstacle => f.write_str("#")?,
             Start => f.write_str("^")?,
-            Visited => f.write_str("X")?,
         }
         Ok(())
-    }
-}
-
-impl<T: Debug> Debug for Grid<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for row in &self.0 {
-            for m in row {
-                f.write_fmt(format_args!("{:?}", m))?;
-            }
-            f.write_str("\n")?;
-        }
-        Ok(())
-    }
-}
-
-impl Grid<Marker> {
-    fn mark_visited(&self, visited: &HashSet<Position>) -> Self {
-        let visited_grid: Vec<Vec<Marker>> = self
-            .0
-            .iter()
-            .enumerate()
-            .map(|(y, row)| {
-                row.iter()
-                    .enumerate()
-                    .map(|(x, m)| {
-                        if visited.contains(&Position { y, x })
-                            && !matches!(m, Start)
-                        {
-                            Visited
-                        } else {
-                            *m
-                        }
-                    })
-                    .collect()
-            })
-            .collect();
-
-        Grid(visited_grid)
-    }
-}
-
-impl<T> Grid<T> {
-    fn get(&self, Position { x, y }: Position) -> Option<&T> {
-        self.0.get(y).and_then(|r| r.get(x))
     }
 }
 
@@ -137,28 +99,23 @@ impl Guard {
         }
     }
 
-    fn from(grid: &Grid<Marker>) -> Self {
-        grid.0
-            .iter()
-            .enumerate()
-            .find_map(|(y, row)| {
-                row.iter().enumerate().find_map(|(x, m)| {
-                    matches!(m, Start).then(|| Position { x, y })
-                })
-            })
+    fn from(map: &Map<Marker>) -> Self {
+        map.0
+            .indexed_iter()
+            .find_map(|(index, m)| matches!(m, Start).then(|| index.into()))
             .map(Guard::new)
             .expect("starting position not found")
     }
 
     fn step(
         &mut self,
-        grid: &Grid<Marker>,
+        map: &Map<Marker>,
         extra_obstacle: Option<Position>,
     ) -> StepOutcome {
         if let Some((position, marker)) = self
             .direction
             .next(&self.position)
-            .and_then(|p| grid.get(p).map(|m| (p, m)))
+            .and_then(|p| map.0.get(p.y, p.x).map(|m| (p, m)))
         {
             match marker {
                 Obstacle => {
@@ -184,18 +141,18 @@ impl Guard {
 
     fn walk(
         &mut self,
-        grid: &Grid<Marker>,
+        map: &Map<Marker>,
         extra_obstacle: Option<Position>,
     ) -> StepOutcome {
         let mut outcome = StepOutcome::InProgres;
         while matches!(outcome, StepOutcome::InProgres) {
-            outcome = self.step(grid, extra_obstacle)
+            outcome = self.step(map, extra_obstacle)
         }
         outcome
     }
 }
 
-fn parse_input(input: &str) -> IResult<&str, Grid<Marker>> {
+fn parse_input(input: &str) -> IResult<&str, Map<Marker>> {
     separated_list1(
         line_ending,
         many1(alt((
@@ -204,15 +161,15 @@ fn parse_input(input: &str) -> IResult<&str, Grid<Marker>> {
             tag("^").map(|_| Start),
         ))),
     )(input)
-    .map(|(r, g)| (r, Grid(g)))
+    .map(|(r, g)| (r, Map(Grid::from(g))))
 }
 
 pub fn part_one(input: &str) -> Option<u64> {
-    let (_, grid) = parse_input(input).expect("parsing failed");
+    let (_, map) = parse_input(input).expect("parsing failed");
 
-    let mut guard = Guard::from(&grid);
+    let mut guard = Guard::from(&map);
 
-    guard.walk(&grid, None);
+    guard.walk(&map, None);
 
     let visited: HashSet<Position> =
         guard.visited.iter().map(|(p, _)| *p).collect();
@@ -221,27 +178,22 @@ pub fn part_one(input: &str) -> Option<u64> {
 }
 
 pub fn part_two(input: &str) -> Option<u64> {
-    let (_, grid) = parse_input(input).expect("parsing failed");
+    let (_, map) = parse_input(input).expect("parsing failed");
 
-    let potential_obstacles: Vec<Position> = grid
-        .0
-        .par_iter()
-        .enumerate()
-        .flat_map(|(y, row)| {
-            row.iter()
-                .enumerate()
-                .filter_map(|(x, m)| {
-                    let position = Position { x, y };
-                    if !matches!(m, Obstacle) {
-                        let mut guard = Guard::from(&grid);
-                        let outcome = guard.walk(&grid, Some(position));
-                        matches!(outcome, StepOutcome::CycleDetected)
-                            .then(|| position)
-                    } else {
-                        None
-                    }
-                })
-                .collect::<Vec<Position>>()
+    let guard = Guard::from(&map);
+    let mut first_guard = guard.clone();
+
+    first_guard.walk(&map, None);
+
+    let visited: HashSet<Position> =
+        first_guard.visited.iter().map(|(p, _)| *p).collect();
+
+    let potential_obstacles: Vec<Position> = visited
+        .into_par_iter()
+        .filter(|position| {
+            let mut guard = guard.clone();
+            let outcome = guard.walk(&map, Some(*position));
+            matches!(outcome, StepOutcome::CycleDetected)
         })
         .collect();
 
