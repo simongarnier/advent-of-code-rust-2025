@@ -34,3 +34,6 @@ grid = "0.15.0"
 strum = "0.26.3"
 strum_macros = "0.26.4"
 moka = { version = "0.12.10", features = ["sync"] }
+fake = { version = "3.1.0", features = ["derive"] }
+rand = "0.8.5"
+colored = "3.0.0"
