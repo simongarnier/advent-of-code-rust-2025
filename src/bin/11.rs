@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use nom::{
     bytes::complete::tag,
     character::complete::{i64, line_ending},
@@ -81,14 +83,48 @@ pub fn part_one(input: &str) -> Option<u64> {
     Some(trees.par_iter_mut().map(|tree| blink_times(tree, 25)).sum())
 }
 
-#[allow(dead_code, unused_variables)]
 pub fn part_two(input: &str) -> Option<u64> {
-    None
+    let (_, result_occurences) =
+        parse_input_to_hash_map(input).expect("parsing_failed");
+
+    let updated_occurences = (0..75).fold(result_occurences, |mut acc, _| {
+        let keys: Vec<_> = acc.clone().into_iter().collect();
+        acc.clear();
+
+        for (key, occurences) in keys {
+            match key {
+                0 => {
+                    acc.entry(1)
+                        .and_modify(|v| *v += occurences)
+                        .or_insert(occurences);
+                }
+                key => {
+                    if let Some((left, right)) = split(key) {
+                        acc.entry(left)
+                            .and_modify(|v| *v += occurences)
+                            .or_insert(occurences);
+                        acc.entry(right)
+                            .and_modify(|v| *v += occurences)
+                            .or_insert(occurences);
+                    } else {
+                        acc.entry(key * 2024)
+                            .and_modify(|v| *v += occurences)
+                            .or_insert(occurences);
+                    }
+                }
+            }
+        }
+
+        acc
+    });
+
+    Some(updated_occurences.values().sum())
 }
 
 fn blink_times(stone_tree: &mut StoneTree, n: u8) -> u64 {
-    let (_, final_count) = (0..n).fold((stone_tree, 1u64), |(t, _), _| {
+    let (_, final_count) = (0..n).fold((stone_tree, 1u64), |(t, _), n| {
         let count = blink(t);
+        println!("blinked {n} times count is {count}");
         (t, count)
     });
 
@@ -100,6 +136,19 @@ fn parse_input(input: &str) -> IResult<&str, Vec<StoneTree>> {
         separated_list1(tag(" "), i64.map(|v| StoneTree::new(v as u64))),
         line_ending,
     )(input)
+}
+
+fn parse_input_to_hash_map(input: &str) -> IResult<&str, HashMap<u64, u64>> {
+    terminated(separated_list1(tag(" "), i64), line_ending)(input).map(
+        |(r, keys)| {
+            (
+                r,
+                keys.iter()
+                    .map(|k| (*k as u64, 1u64))
+                    .collect::<HashMap<_, _>>(),
+            )
+        },
+    )
 }
 
 #[cfg(test)]
@@ -122,6 +171,16 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_input_to_hash_map() {
+        assert_eq!(
+            parse_input_to_hash_map(&advent_of_code::template::read_file(
+                "examples", DAY
+            )),
+            Ok(("", HashMap::from([(125, 1), (17, 1)]))),
+        )
+    }
+
+    #[test]
     fn test_6_blink() {
         let result_125 = blink_times(&mut StoneTree::new(125), 6);
         let result_17 = blink_times(&mut StoneTree::new(17), 6);
@@ -139,6 +198,6 @@ mod tests {
     fn test_part_two() {
         let result =
             part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(65601038650482));
     }
 }
