@@ -122,9 +122,8 @@ pub fn part_two(input: &str) -> Option<u64> {
 }
 
 fn blink_times(stone_tree: &mut StoneTree, n: u8) -> u64 {
-    let (_, final_count) = (0..n).fold((stone_tree, 1u64), |(t, _), n| {
+    let (_, final_count) = (0..n).fold((stone_tree, 1u64), |(t, _), _| {
         let count = blink(t);
-        println!("blinked {n} times count is {count}");
         (t, count)
     });
 
