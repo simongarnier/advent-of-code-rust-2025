@@ -11,7 +11,6 @@ jobs:
     name: Continuous Integration
     steps:
       - uses: actions/checkout@v4
-      - name: Set up cargo cache
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
@@ -19,6 +18,7 @@ jobs:
         uses: DeterminateSystems/flake-checker-action@main
         with:
           fail-mode: true
+      - name: Set up cargo cache
         uses: actions/cache@v4
         continue-on-error: false
         with:
